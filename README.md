@@ -5,7 +5,10 @@ Here's your properly formatted README.md file with improved structure, consisten
 
 A full-stack book management application built with the MERN stack (MongoDB, Express.js, React, Node.js) and Next.js.
 
-![MERN Book App Screenshot](public/app-screenshot.png)
+![image](https://github.com/user-attachments/assets/082211cd-9dcc-4dae-b71c-9b89ba8c4255)
+
+![image](https://github.com/user-attachments/assets/d8194eb6-d70a-4899-9d66-be4187c6ee15)
+
 
 ## ✨ Features
 
