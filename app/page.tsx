@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { BookOpen, Plus, Loader2 } from "lucide-react"
 import { useBooks } from "@/hooks/useBooks"
+import Image from "next/image"
 
 export default function BookList() {
   const { books, loading, error } = useBooks()
@@ -49,35 +50,67 @@ export default function BookList() {
         </Link>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {books.map((book) => (
-          <Card key={book._id} className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="line-clamp-1">{book.title}</CardTitle>
-              <CardDescription>by {book.author}</CardDescription>
+          <Card key={book._id} className="hover:shadow-lg transition-shadow overflow-hidden">
+            {/* Cover Image */}
+            <div className="relative h-48 w-full bg-gray-100">
+              {book.coverImageUrl ? (
+                <Image
+                  src={book.coverImageUrl || "/placeholder.svg"}
+                  alt={`Cover of ${book.title}`}
+                  fill
+                  className="object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement
+                    target.style.display = "none"
+                    const fallback = target.nextElementSibling as HTMLElement
+                    if (fallback) fallback.style.display = "flex"
+                  }}
+                />
+              ) : null}
+              {/* Fallback when no image or image fails to load */}
+              <div
+                className={`absolute inset-0 flex items-center justify-center bg-gray-100 ${
+                  book.coverImageUrl ? "hidden" : "flex"
+                }`}
+              >
+                <BookOpen className="h-12 w-12 text-gray-400" />
+              </div>
+            </div>
+
+            <CardHeader className="pb-2">
+              <CardTitle className="line-clamp-2 text-lg leading-tight">{book.title}</CardTitle>
+              <CardDescription className="text-sm">by {book.author}</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-2 mb-4">
+
+            <CardContent className="pt-0">
+              <div className="space-y-1 mb-4">
                 {book.genre && (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     <span className="font-medium">Genre:</span> {book.genre}
                   </p>
                 )}
                 {book.publishedYear && (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     <span className="font-medium">Published:</span> {book.publishedYear}
                   </p>
                 )}
-                {book.description && <p className="text-sm line-clamp-3">{book.description}</p>}
+                {book.description && (
+                  <p className="text-xs text-muted-foreground line-clamp-2 mt-2">{book.description}</p>
+                )}
               </div>
+
               <div className="flex gap-2">
                 <Link href={`/books/${book._id}`} className="flex-1">
-                  <Button variant="outline" className="w-full bg-transparent">
+                  <Button variant="outline" size="sm" className="w-full bg-transparent">
                     View Details
                   </Button>
                 </Link>
                 <Link href={`/books/${book._id}/edit`}>
-                  <Button variant="secondary">Edit</Button>
+                  <Button variant="secondary" size="sm">
+                    Edit
+                  </Button>
                 </Link>
               </div>
             </CardContent>
