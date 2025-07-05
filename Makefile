@@ -8,6 +8,10 @@ up.build:
 	$(COMPOSE) up --build -d
 down:
 	$(COMPOSE) down
+down.v:
+	$(COMPOSE) down -v
+logs:
+	$(COMPOSE) logs -f
 
 
 # MERN Book App - Development Commands
