@@ -1,36 +1,31 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
-import Link from "next/link"
+
+import { use, useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { ArrowLeft, Save, Loader2 } from "lucide-react"
+import { ArrowLeft, Loader2 } from "lucide-react"
 import { useBook } from "@/hooks/useBooks"
 import { apiService } from "@/lib/api"
 
 interface EditBookPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
-}
-
-interface FieldError {
-  field: string
-  message: string
+  }>
 }
 
 export default function EditBookPage({ params }: EditBookPageProps) {
+  const resolvedParams = use(params)
   const router = useRouter()
-  const { book, loading, error } = useBook(params.id)
-  const [saving, setSaving] = useState(false)
-  const [formError, setFormError] = useState<string | null>(null)
-  const [fieldErrors, setFieldErrors] = useState<FieldError[]>([])
-
+  const { book, loading, error } = useBook(resolvedParams.id)
+  const [submitting, setSubmitting] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
   const [formData, setFormData] = useState({
     title: "",
     author: "",
@@ -38,16 +33,8 @@ export default function EditBookPage({ params }: EditBookPageProps) {
     coverImageUrl: "",
     description: "",
     publishedYear: new Date().getFullYear(),
-    pages: 0,
-    isbn: "",
-    publisher: "",
   })
 
-  const getFieldError = (fieldName: string) => {
-    return fieldErrors.find((error) => error.field === fieldName)?.message
-  }
-
-  // Update form data when book loads
   useEffect(() => {
     if (book) {
       setFormData({
@@ -57,70 +44,29 @@ export default function EditBookPage({ params }: EditBookPageProps) {
         coverImageUrl: book.coverImageUrl || "",
         description: book.description || "",
         publishedYear: book.publishedYear || new Date().getFullYear(),
-        pages: book.pages || 0,
-        isbn: book.isbn || "",
-        publisher: book.publisher || "",
       })
     }
   }, [book])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSaving(true)
-    setFormError(null)
-    setFieldErrors([])
+    setSubmitting(true)
+    setErrors({})
 
     try {
-      await apiService.updateBook(params.id, formData)
-      router.push(`/books/${params.id}`)
-    } catch (error) {
-      if (error instanceof Error) {
-        const errorMessage = error.message
-
-        // Try to parse validation errors
-        if (errorMessage.includes("Validation failed")) {
-          try {
-            const response = await fetch(
-              `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/books/${params.id}`,
-              {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
-              },
-            )
-            const errorData = await response.json()
-
-            if (errorData.details && Array.isArray(errorData.details)) {
-              const errors: FieldError[] = errorData.details.map((detail: string) => {
-                // Parse field name from error message
-                let field = "general"
-                if (detail.includes("Title")) field = "title"
-                else if (detail.includes("Author")) field = "author"
-                else if (detail.includes("Genre")) field = "genre"
-                else if (detail.includes("Cover") || detail.includes("image")) field = "coverImageUrl"
-                else if (detail.includes("Description")) field = "description"
-                else if (detail.includes("Published") || detail.includes("year")) field = "publishedYear"
-                else if (detail.includes("Pages")) field = "pages"
-                else if (detail.includes("ISBN")) field = "isbn"
-                else if (detail.includes("Publisher")) field = "publisher"
-
-                return { field, message: detail }
-              })
-              setFieldErrors(errors)
-            } else {
-              setFormError(errorMessage)
-            }
-          } catch {
-            setFormError(errorMessage)
-          }
-        } else {
-          setFormError(errorMessage)
-        }
+      await apiService.updateBook(resolvedParams.id, formData)
+      router.push(`/books/${resolvedParams.id}`)
+    } catch (error: any) {
+      if (error.response?.data?.errors) {
+        const fieldErrors: Record<string, string> = {}
+        error.response.data.errors.forEach((err: any) => {
+          fieldErrors[err.path] = err.msg
+        })
+        setErrors(fieldErrors)
       } else {
-        setFormError("An error occurred")
+        setErrors({ general: error.response?.data?.message || "Failed to update book" })
       }
-    } finally {
-      setSaving(false)
+      setSubmitting(false)
     }
   }
 
@@ -128,16 +74,18 @@ export default function EditBookPage({ params }: EditBookPageProps) {
     const { name, value } = e.target
     setFormData((prev) => ({
       ...prev,
-      [name]: name === "publishedYear" || name === "pages" ? Number.parseInt(value) || 0 : value,
+      [name]: name === "publishedYear" ? Number.parseInt(value) || new Date().getFullYear() : value,
     }))
 
-    // Clear field error when user starts typing
-    setFieldErrors((prev) => prev.filter((error) => error.field !== name))
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }))
+    }
   }
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4 sm:py-8">
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
@@ -150,12 +98,12 @@ export default function EditBookPage({ params }: EditBookPageProps) {
 
   if (error || !book) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4 sm:py-8">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Book Not Found</h1>
+          <h1 className="text-xl sm:text-2xl font-bold mb-4">Book Not Found</h1>
           <p className="text-muted-foreground mb-4">The book you're trying to edit doesn't exist.</p>
           <Link href="/">
-            <Button>
+            <Button size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Library
             </Button>
@@ -166,163 +114,150 @@ export default function EditBookPage({ params }: EditBookPageProps) {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-6">
-        <Link href={`/books/${params.id}`}>
-          <Button variant="ghost">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Book
+    <div className="container mx-auto px-4 py-4 sm:py-8">
+      {/* Header */}
+      <div className="mb-4 sm:mb-6">
+        <Link href={`/books/${resolvedParams.id}`}>
+          <Button variant="ghost" size="sm" className="p-2 sm:px-4">
+            <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Back to Book</span>
+            <span className="sm:hidden">Back</span>
           </Button>
         </Link>
       </div>
 
       <Card className="max-w-2xl mx-auto">
         <CardHeader>
-          <CardTitle className="text-2xl">Edit Book</CardTitle>
+          <CardTitle className="text-xl sm:text-2xl">Edit Book</CardTitle>
         </CardHeader>
         <CardContent>
-          {formError && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">{formError}</div>
-          )}
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+            {errors.general && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
+                {errors.general}
+              </div>
+            )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Title */}
             <div className="space-y-2">
-              <Label htmlFor="title">Title *</Label>
+              <Label htmlFor="title" className="text-sm font-medium">
+                Title <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="title"
                 name="title"
+                type="text"
+                placeholder="Enter book title"
                 value={formData.title}
                 onChange={handleChange}
-                placeholder="Enter book title"
+                className={errors.title ? "border-red-500" : ""}
                 required
-                className={getFieldError("title") ? "border-red-500" : ""}
               />
-              {getFieldError("title") && <p className="text-sm text-red-600 mt-1">{getFieldError("title")}</p>}
+              {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
             </div>
 
+            {/* Author */}
             <div className="space-y-2">
-              <Label htmlFor="author">Author *</Label>
+              <Label htmlFor="author" className="text-sm font-medium">
+                Author <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="author"
                 name="author"
+                type="text"
+                placeholder="Enter author name"
                 value={formData.author}
                 onChange={handleChange}
-                placeholder="Enter author name"
+                className={errors.author ? "border-red-500" : ""}
                 required
-                className={getFieldError("author") ? "border-red-500" : ""}
               />
-              {getFieldError("author") && <p className="text-sm text-red-600 mt-1">{getFieldError("author")}</p>}
+              {errors.author && <p className="text-red-500 text-xs mt-1">{errors.author}</p>}
             </div>
 
+            {/* Genre */}
             <div className="space-y-2">
-              <Label htmlFor="genre">Genre</Label>
+              <Label htmlFor="genre" className="text-sm font-medium">
+                Genre
+              </Label>
               <Input
                 id="genre"
                 name="genre"
+                type="text"
+                placeholder="Enter book genre"
                 value={formData.genre}
                 onChange={handleChange}
-                placeholder="Enter book genre"
-                className={getFieldError("genre") ? "border-red-500" : ""}
+                className={errors.genre ? "border-red-500" : ""}
               />
-              {getFieldError("genre") && <p className="text-sm text-red-600 mt-1">{getFieldError("genre")}</p>}
+              {errors.genre && <p className="text-red-500 text-xs mt-1">{errors.genre}</p>}
             </div>
 
+            {/* Cover Image URL */}
             <div className="space-y-2">
-              <Label htmlFor="coverImageUrl">Cover Image URL</Label>
+              <Label htmlFor="coverImageUrl" className="text-sm font-medium">
+                Cover Image URL
+              </Label>
               <Input
                 id="coverImageUrl"
                 name="coverImageUrl"
+                type="url"
+                placeholder="Enter cover image URL (optional)"
                 value={formData.coverImageUrl}
                 onChange={handleChange}
-                placeholder="Enter cover image URL (optional)"
-                type="url"
-                className={getFieldError("coverImageUrl") ? "border-red-500" : ""}
+                className={errors.coverImageUrl ? "border-red-500" : ""}
               />
-              {getFieldError("coverImageUrl") && (
-                <p className="text-sm text-red-600 mt-1">{getFieldError("coverImageUrl")}</p>
-              )}
+              {errors.coverImageUrl && <p className="text-red-500 text-xs mt-1">{errors.coverImageUrl}</p>}
             </div>
 
+            {/* Description */}
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description" className="text-sm font-medium">
+                Description
+              </Label>
               <Textarea
                 id="description"
                 name="description"
+                placeholder="Enter book description"
                 value={formData.description}
                 onChange={handleChange}
-                rows={4}
-                placeholder="Enter book description"
-                className={getFieldError("description") ? "border-red-500" : ""}
+                className={`min-h-[120px] resize-none ${errors.description ? "border-red-500" : ""}`}
+                rows={5}
               />
-              {getFieldError("description") && (
-                <p className="text-sm text-red-600 mt-1">{getFieldError("description")}</p>
-              )}
+              {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
             </div>
 
+            {/* Published Year */}
             <div className="space-y-2">
-              <Label htmlFor="publishedYear">Published Year</Label>
+              <Label htmlFor="publishedYear" className="text-sm font-medium">
+                Published Year
+              </Label>
               <Input
                 id="publishedYear"
                 name="publishedYear"
                 type="number"
+                placeholder="2025"
                 value={formData.publishedYear}
                 onChange={handleChange}
+                className={errors.publishedYear ? "border-red-500" : ""}
                 min="1000"
-                max={new Date().getFullYear()}
-                className={getFieldError("publishedYear") ? "border-red-500" : ""}
+                max={new Date().getFullYear() + 10}
               />
-              {getFieldError("publishedYear") && (
-                <p className="text-sm text-red-600 mt-1">{getFieldError("publishedYear")}</p>
-              )}
+              {errors.publishedYear && <p className="text-red-500 text-xs mt-1">{errors.publishedYear}</p>}
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="pages">Pages</Label>
-                <Input
-                  id="pages"
-                  name="pages"
-                  type="number"
-                  value={formData.pages}
-                  onChange={handleChange}
-                  min="1"
-                  className={getFieldError("pages") ? "border-red-500" : ""}
-                />
-                {getFieldError("pages") && <p className="text-sm text-red-600 mt-1">{getFieldError("pages")}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="isbn">ISBN</Label>
-                <Input
-                  id="isbn"
-                  name="isbn"
-                  value={formData.isbn}
-                  onChange={handleChange}
-                  placeholder="978-0-123456-78-9"
-                  className={getFieldError("isbn") ? "border-red-500" : ""}
-                />
-                {getFieldError("isbn") && <p className="text-sm text-red-600 mt-1">{getFieldError("isbn")}</p>}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="publisher">Publisher</Label>
-              <Input
-                id="publisher"
-                name="publisher"
-                value={formData.publisher}
-                onChange={handleChange}
-                className={getFieldError("publisher") ? "border-red-500" : ""}
-              />
-              {getFieldError("publisher") && <p className="text-sm text-red-600 mt-1">{getFieldError("publisher")}</p>}
-            </div>
-
-            <div className="flex gap-4 pt-4">
-              <Button type="submit" className="flex-1" disabled={saving}>
-                {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-                Save Changes
+            {/* Submit Button */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-4">
+              <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
+                {submitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Updating Book...
+                  </>
+                ) : (
+                  "Update Book"
+                )}
               </Button>
-              <Link href={`/books/${params.id}`} className="flex-1">
-                <Button type="button" variant="outline" className="w-full bg-transparent">
+              <Link href={`/books/${resolvedParams.id}`}>
+                <Button type="button" variant="outline" className="w-full sm:w-auto bg-transparent">
                   Cancel
                 </Button>
               </Link>

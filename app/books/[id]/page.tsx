@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { use, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -25,20 +25,21 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import Image from "next/image"
 
 interface BookPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default function BookPage({ params }: BookPageProps) {
+  const resolvedParams = use(params)
   const router = useRouter()
-  const { book, loading, error } = useBook(params.id)
+  const { book, loading, error } = useBook(resolvedParams.id)
   const [deleting, setDeleting] = useState(false)
 
   const handleDelete = async () => {
     setDeleting(true)
     try {
-      await apiService.deleteBook(params.id)
+      await apiService.deleteBook(resolvedParams.id)
       router.push("/")
     } catch (error) {
       console.error("Error deleting book:", error)
