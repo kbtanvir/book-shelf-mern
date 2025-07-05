@@ -79,28 +79,8 @@ cp .env.example .env.local
 cp server/.env.example server/.env
 \`\`\`
 
-### 3. Configure Environment Variables
 
-**Frontend (.env.local):**
-\`\`\`env
-NEXT_PUBLIC_API_URL=http://localhost:5000/api
-NEXT_PUBLIC_FRONTEND_URL=http://localhost:3000
-\`\`\`
-
-**Backend (server/.env):**
-\`\`\`env
-MONGODB_URI=mongodb://localhost:27017/bookshelf
-PORT=5000
-NODE_ENV=development
-FRONTEND_URL=http://localhost:3000
-JWT_SECRET=your-super-secret-jwt-key-here
-JWT_EXPIRES_IN=7d
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX_REQUESTS=100
-ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
-\`\`\`
-
-### 4. Database Setup
+### 3. Database Setup
 \`\`\`bash
 # Seed the database with sample books
 cd server
@@ -108,7 +88,7 @@ npm run seed
 cd ..
 \`\`\`
 
-### 5. Start the Application
+### 4. Start the Application
 \`\`\`bash
 # Start backend (in one terminal)
 cd server
