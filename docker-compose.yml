@@ -1,0 +1,42 @@
+x-default-resources: &default-resources
+  deploy:
+    resources:
+      limits:
+        cpus: '1'
+        memory: 256M
+      reservations:
+        cpus: '0.5'
+        memory: 120M
+  restart: no
+  networks:
+    - network
+
+
+services:
+  
+  db:
+    <<: *default-resources
+    image: mongo:6-jammy
+    container_name: ${CONTAINER_PREFIX}_mongodb
+    ports:
+      - ${MONGO_PORT}:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DB}
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    
+networks:
+  network:
+    name: ${CONTAINER_PREFIX}
+    driver: bridge
+
+volumes:
+  mongo_data:
+    name: ${CONTAINER_PREFIX}_mongodb
