@@ -42,7 +42,7 @@ setup: ## Install dependencies for both frontend and backend
 
 setup-env: ## Copy environment files from examples
 	@echo "$(GREEN)Setting up environment files...$(NC)"
-	@if [ ! -f .env.local ]; then cp .env.example .env.local && echo "Created .env.local"; fi
+	@if [ ! -f .env ]; then cp .env.example .env && echo "Created .env"; fi
 	@if [ ! -f server/.env ]; then cp server/.env.example server/.env && echo "Created server/.env"; fi
 	@echo "$(YELLOW)Please update the environment files with your actual values$(NC)"
 
@@ -120,12 +120,12 @@ health: ## Check if both servers are running
  
 
 # Quick start for new developers
-quick-start: up setup setup-env seed ## Complete setup for new developers
+quick-start: setup setup-env up seed ## Complete setup for new developers
 	@echo "$(GREEN)=================================="
 	@echo "🚀 Quick start complete!"
 	@echo "=================================="
 	@echo "$(YELLOW)Next steps:$(NC)"
-	@echo "1. Update .env.local and server/.env with your MongoDB URI"
+	@echo "1. Update .env and server/.env with your MongoDB URI"
 	@echo "2. Run 'make dev' to start development servers"
 	@echo "3. Visit http://localhost:3000 to see the app"
 	@echo "$(GREEN)=================================="
