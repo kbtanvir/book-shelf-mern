@@ -1,14 +1,26 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Edit, Trash2, Loader2 } from "lucide-react"
+import { Separator } from "@/components/ui/separator"
+import { ArrowLeft, Edit, Trash2, Calendar, BookOpen, User, Building, Hash, Loader2 } from "lucide-react"
 import { useBook } from "@/hooks/useBooks"
-import { useRouter } from "next/navigation"
-import { useState } from "react"
 import { apiService } from "@/lib/api"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface BookPageProps {
   params: {
@@ -17,22 +29,17 @@ interface BookPageProps {
 }
 
 export default function BookPage({ params }: BookPageProps) {
-  const { book, loading, error } = useBook(params.id)
   const router = useRouter()
+  const { book, loading, error } = useBook(params.id)
   const [deleting, setDeleting] = useState(false)
 
   const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this book?")) {
-      return
-    }
-
+    setDeleting(true)
     try {
-      setDeleting(true)
       await apiService.deleteBook(params.id)
       router.push("/")
     } catch (error) {
-      alert("Failed to delete book. Please try again.")
-    } finally {
+      console.error("Error deleting book:", error)
       setDeleting(false)
     }
   }
@@ -78,86 +85,128 @@ export default function BookPage({ params }: BookPageProps) {
         </Link>
       </div>
 
-      <Card className="max-w-4xl mx-auto">
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="space-y-2">
-              <CardTitle className="text-3xl">{book.title}</CardTitle>
-              <p className="text-xl text-muted-foreground">by {book.author}</p>
-              <div className="flex items-center gap-2">
-                {book.genre && <Badge variant="secondary">{book.genre}</Badge>}
-                {book.publishedYear && <Badge variant="outline">{book.publishedYear}</Badge>}
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Link href={`/books/${book._id}/edit`}>
-                <Button variant="outline">
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
-                </Button>
-              </Link>
-              <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
-                {deleting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
-                Delete
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {book.description && (
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Description</h3>
-              <p className="text-muted-foreground leading-relaxed">{book.description}</p>
-            </div>
-          )}
+      <div className="grid gap-8 md:grid-cols-3">
+        {/* Book Cover */}
+        <div className="md:col-span-1">
+          <Card>
+            <CardContent className="p-6">
+              {book.coverImageUrl ? (
+                <img
+                  src={book.coverImageUrl || "/placeholder.svg"}
+                  alt={`Cover of ${book.title}`}
+                  className="w-full h-auto rounded-lg shadow-lg"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement
+                    target.src = "/placeholder.svg?height=400&width=300"
+                  }}
+                />
+              ) : (
+                <div className="w-full h-96 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <BookOpen className="h-16 w-16 text-gray-400" />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <h3 className="text-lg font-semibold mb-3">Book Details</h3>
-              <div className="space-y-2">
-                {book.pages && (
-                  <div className="flex justify-between">
-                    <span className="font-medium">Pages:</span>
-                    <span>{book.pages}</span>
+        {/* Book Details */}
+        <div className="md:col-span-2">
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="text-3xl mb-2">{book.title}</CardTitle>
+                  <div className="flex items-center gap-2 text-lg text-muted-foreground mb-4">
+                    <User className="h-4 w-4" />
+                    <span>by {book.author}</span>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Link href={`/books/${book._id}/edit`}>
+                    <Button size="sm">
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit
+                    </Button>
+                  </Link>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="sm" variant="destructive" disabled={deleting}>
+                        {deleting ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4 mr-2" />
+                        )}
+                        Delete
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently delete "{book.title}" from your library.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                          Delete Book
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+              {book.genre && <Badge variant="secondary">{book.genre}</Badge>}
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {book.description && (
+                <div>
+                  <h3 className="font-semibold mb-2">Description</h3>
+                  <p className="text-muted-foreground leading-relaxed">{book.description}</p>
+                </div>
+              )}
+
+              <Separator />
+
+              <div className="grid gap-4 md:grid-cols-2">
+                {book.publishedYear && (
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">Published: {book.publishedYear}</span>
                   </div>
                 )}
-                {book.isbn && (
-                  <div className="flex justify-between">
-                    <span className="font-medium">ISBN:</span>
-                    <span className="font-mono text-sm">{book.isbn}</span>
+                {book.pages && book.pages > 0 && (
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">{book.pages} pages</span>
                   </div>
                 )}
                 {book.publisher && (
-                  <div className="flex justify-between">
-                    <span className="font-medium">Publisher:</span>
-                    <span>{book.publisher}</span>
+                  <div className="flex items-center gap-2">
+                    <Building className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">Publisher: {book.publisher}</span>
                   </div>
                 )}
-                {book.publishedYear && (
-                  <div className="flex justify-between">
-                    <span className="font-medium">Published:</span>
-                    <span>{book.publishedYear}</span>
+                {book.isbn && (
+                  <div className="flex items-center gap-2">
+                    <Hash className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">ISBN: {book.isbn}</span>
                   </div>
                 )}
               </div>
-            </div>
 
-            <div>
-              <h3 className="text-lg font-semibold mb-3">Metadata</h3>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="font-medium">Added:</span>
-                  <span className="text-sm">{new Date(book.createdAt).toLocaleDateString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Updated:</span>
-                  <span className="text-sm">{new Date(book.updatedAt).toLocaleDateString()}</span>
-                </div>
+              <Separator />
+
+              <div className="text-xs text-muted-foreground">
+                <p>Added: {new Date(book.createdAt).toLocaleDateString()}</p>
+                {book.updatedAt !== book.createdAt && (
+                  <p>Last updated: {new Date(book.updatedAt).toLocaleDateString()}</p>
+                )}
               </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   )
 }

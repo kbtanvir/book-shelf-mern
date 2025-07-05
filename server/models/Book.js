@@ -19,15 +19,26 @@ const BookSchema = new mongoose.Schema(
       trim: true,
       maxlength: [50, "Genre cannot be more than 50 characters"],
     },
-    publishedYear: {
-      type: Number,
-      min: [1000, "Published year must be at least 1000"],
-      max: [new Date().getFullYear(), "Published year cannot be in the future"],
+    coverImageUrl: {
+      type: String,
+      trim: true,
+      validate: {
+        validator: (v) => {
+          if (!v) return true // Optional field
+          return /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)$/i.test(v)
+        },
+        message: "Please enter a valid image URL (jpg, jpeg, png, gif, webp)",
+      },
     },
     description: {
       type: String,
       trim: true,
       maxlength: [2000, "Description cannot be more than 2000 characters"],
+    },
+    publishedYear: {
+      type: Number,
+      min: [1000, "Published year must be at least 1000"],
+      max: [new Date().getFullYear(), "Published year cannot be in the future"],
     },
     pages: {
       type: Number,

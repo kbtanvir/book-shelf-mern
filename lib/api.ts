@@ -7,8 +7,9 @@ export interface Book {
   title: string
   author: string
   genre?: string
-  publishedYear?: number
+  coverImageUrl?: string
   description?: string
+  publishedYear?: number
   pages?: number
   isbn?: string
   publisher?: string
@@ -27,8 +28,9 @@ export interface CreateBookData {
   title: string
   author: string
   genre?: string
-  publishedYear?: number
+  coverImageUrl?: string
   description?: string
+  publishedYear?: number
   pages?: number
   isbn?: string
   publisher?: string

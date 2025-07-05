@@ -12,32 +12,85 @@ import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, Plus, Loader2 } from "lucide-react"
 import { apiService } from "@/lib/api"
 
+interface FieldError {
+  field: string
+  message: string
+}
+
 export default function AddBookPage() {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<FieldError[]>([])
 
   const [formData, setFormData] = useState({
     title: "",
     author: "",
     genre: "",
-    publishedYear: new Date().getFullYear(),
+    coverImageUrl: "",
     description: "",
+    publishedYear: new Date().getFullYear(),
     pages: 0,
     isbn: "",
     publisher: "",
   })
 
+  const getFieldError = (fieldName: string) => {
+    return fieldErrors.find((error) => error.field === fieldName)?.message
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
     setFormError(null)
+    setFieldErrors([])
 
     try {
       await apiService.createBook(formData)
       router.push("/")
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : "An error occurred")
+      if (error instanceof Error) {
+        const errorMessage = error.message
+
+        // Try to parse validation errors
+        if (errorMessage.includes("Validation failed")) {
+          try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/books`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(formData),
+            })
+            const errorData = await response.json()
+
+            if (errorData.details && Array.isArray(errorData.details)) {
+              const errors: FieldError[] = errorData.details.map((detail: string) => {
+                // Parse field name from error message
+                let field = "general"
+                if (detail.includes("Title")) field = "title"
+                else if (detail.includes("Author")) field = "author"
+                else if (detail.includes("Genre")) field = "genre"
+                else if (detail.includes("Cover") || detail.includes("image")) field = "coverImageUrl"
+                else if (detail.includes("Description")) field = "description"
+                else if (detail.includes("Published") || detail.includes("year")) field = "publishedYear"
+                else if (detail.includes("Pages")) field = "pages"
+                else if (detail.includes("ISBN")) field = "isbn"
+                else if (detail.includes("Publisher")) field = "publisher"
+
+                return { field, message: detail }
+              })
+              setFieldErrors(errors)
+            } else {
+              setFormError(errorMessage)
+            }
+          } catch {
+            setFormError(errorMessage)
+          }
+        } else {
+          setFormError(errorMessage)
+        }
+      } else {
+        setFormError("An error occurred")
+      }
     } finally {
       setSaving(false)
     }
@@ -49,6 +102,9 @@ export default function AddBookPage() {
       ...prev,
       [name]: name === "publishedYear" || name === "pages" ? Number.parseInt(value) || 0 : value,
     }))
+
+    // Clear field error when user starts typing
+    setFieldErrors((prev) => prev.filter((error) => error.field !== name))
   }
 
   return (
@@ -72,40 +128,61 @@ export default function AddBookPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="title">Title *</Label>
-                <Input id="title" name="title" value={formData.title} onChange={handleChange} required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="author">Author *</Label>
-                <Input id="author" name="author" value={formData.author} onChange={handleChange} required />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="title">Title *</Label>
+              <Input
+                id="title"
+                name="title"
+                value={formData.title}
+                onChange={handleChange}
+                placeholder="Enter book title"
+                required
+                className={getFieldError("title") ? "border-red-500" : ""}
+              />
+              {getFieldError("title") && <p className="text-sm text-red-600 mt-1">{getFieldError("title")}</p>}
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="genre">Genre</Label>
-                <Input
-                  id="genre"
-                  name="genre"
-                  value={formData.genre}
-                  onChange={handleChange}
-                  placeholder="e.g., Fiction, Mystery, Romance"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="publishedYear">Published Year</Label>
-                <Input
-                  id="publishedYear"
-                  name="publishedYear"
-                  type="number"
-                  value={formData.publishedYear}
-                  onChange={handleChange}
-                  min="1000"
-                  max={new Date().getFullYear()}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="author">Author *</Label>
+              <Input
+                id="author"
+                name="author"
+                value={formData.author}
+                onChange={handleChange}
+                placeholder="Enter author name"
+                required
+                className={getFieldError("author") ? "border-red-500" : ""}
+              />
+              {getFieldError("author") && <p className="text-sm text-red-600 mt-1">{getFieldError("author")}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="genre">Genre</Label>
+              <Input
+                id="genre"
+                name="genre"
+                value={formData.genre}
+                onChange={handleChange}
+                placeholder="Enter book genre"
+                className={getFieldError("genre") ? "border-red-500" : ""}
+              />
+              {getFieldError("genre") && <p className="text-sm text-red-600 mt-1">{getFieldError("genre")}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="coverImageUrl">Cover Image URL</Label>
+              <Input
+                id="coverImageUrl"
+                name="coverImageUrl"
+                value={formData.coverImageUrl}
+                onChange={handleChange}
+                placeholder="Enter cover image URL (optional)"
+                type="url"
+                className={getFieldError("coverImageUrl") ? "border-red-500" : ""}
+              />
+              {getFieldError("coverImageUrl") && (
+                <p className="text-sm text-red-600 mt-1">{getFieldError("coverImageUrl")}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -116,14 +193,44 @@ export default function AddBookPage() {
                 value={formData.description}
                 onChange={handleChange}
                 rows={4}
-                placeholder="Enter a brief description of the book..."
+                placeholder="Enter book description"
+                className={getFieldError("description") ? "border-red-500" : ""}
               />
+              {getFieldError("description") && (
+                <p className="text-sm text-red-600 mt-1">{getFieldError("description")}</p>
+              )}
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="publishedYear">Published Year</Label>
+              <Input
+                id="publishedYear"
+                name="publishedYear"
+                type="number"
+                value={formData.publishedYear}
+                onChange={handleChange}
+                min="1000"
+                max={new Date().getFullYear()}
+                className={getFieldError("publishedYear") ? "border-red-500" : ""}
+              />
+              {getFieldError("publishedYear") && (
+                <p className="text-sm text-red-600 mt-1">{getFieldError("publishedYear")}</p>
+              )}
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="pages">Pages</Label>
-                <Input id="pages" name="pages" type="number" value={formData.pages} onChange={handleChange} min="1" />
+                <Input
+                  id="pages"
+                  name="pages"
+                  type="number"
+                  value={formData.pages}
+                  onChange={handleChange}
+                  min="1"
+                  className={getFieldError("pages") ? "border-red-500" : ""}
+                />
+                {getFieldError("pages") && <p className="text-sm text-red-600 mt-1">{getFieldError("pages")}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="isbn">ISBN</Label>
@@ -133,12 +240,22 @@ export default function AddBookPage() {
                   value={formData.isbn}
                   onChange={handleChange}
                   placeholder="978-0-123456-78-9"
+                  className={getFieldError("isbn") ? "border-red-500" : ""}
                 />
+                {getFieldError("isbn") && <p className="text-sm text-red-600 mt-1">{getFieldError("isbn")}</p>}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="publisher">Publisher</Label>
-                <Input id="publisher" name="publisher" value={formData.publisher} onChange={handleChange} />
-              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="publisher">Publisher</Label>
+              <Input
+                id="publisher"
+                name="publisher"
+                value={formData.publisher}
+                onChange={handleChange}
+                className={getFieldError("publisher") ? "border-red-500" : ""}
+              />
+              {getFieldError("publisher") && <p className="text-sm text-red-600 mt-1">{getFieldError("publisher")}</p>}
             </div>
 
             <div className="flex gap-4 pt-4">
