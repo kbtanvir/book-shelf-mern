@@ -1,6 +1,6 @@
 Here's your properly formatted README.md file with improved structure, consistent formatting, and better visual hierarchy:
 
-```markdown
+\`\`\`markdown
 # 📚 MERN Book App
 
 A full-stack book management application built with the MERN stack (MongoDB, Express.js, React, Node.js) and Next.js.
@@ -42,19 +42,19 @@ A full-stack book management application built with the MERN stack (MongoDB, Exp
 - npm or pnpm package manager
 
 ### 1. Clone the Repository
-```bash
+\`\`\`bash
 git clone https://github.com/your-username/book-shelf-mern.git
 cd book-shelf-mern
-```
+\`\`\`
 
 ### 2. Quick Setup & Run
-```bash
+\`\`\`bash
 # Complete setup (installs dependencies, sets up environment, seeds database)
 make quick-start
 
 # Start both frontend and backend in development mode
 make dev
-```
+\`\`\`
 
 That's it! The app will be running at:
 - **Frontend**: http://localhost:3000
@@ -65,7 +65,7 @@ That's it! The app will be running at:
 If you prefer manual setup or don't have make installed:
 
 ### 1. Install Dependencies
-```bash
+\`\`\`bash
 # Install frontend dependencies
 npm install
 
@@ -73,36 +73,36 @@ npm install
 cd server
 npm install
 cd ..
-```
+\`\`\`
 
 ### 2. Environment Configuration
-```bash
+\`\`\`bash
 # Copy environment files
 cp .env.example .env.local
 cp server/.env.example server/.env
-```
+\`\`\`
 
 ### 3. Database Setup
-```bash
+\`\`\`bash
 # Seed the database with sample books
 cd server
 npm run seed
 cd ..
-```
+\`\`\`
 
 ### 4. Start the Application
-```bash
+\`\`\`bash
 # Start backend (in one terminal)
 cd server
 npm run dev
 
 # Start frontend (in another terminal)
 npm run dev
-```
+\`\`\`
 
 ## 🎯 Available Make Commands
 
-```bash
+\`\`\`bash
 make help              # Show all available commands
 make quick-start       # Complete setup for new developers
 make dev               # Start both frontend and backend
@@ -116,11 +116,11 @@ make start             # Start both servers in production
 make clean             # Clean node_modules and build files
 make status            # Show project status
 make health            # Check if servers are running
-```
+\`\`\`
 
 ## 📁 Project Structure
 
-```
+\`\`\`
 book-shelf-mern/
 ├── app/                    # Next.js app directory
 │   ├── books/             # Book-related pages
@@ -142,7 +142,7 @@ book-shelf-mern/
 ├── public/                # Static assets
 ├── Makefile              # Development commands
 └── docker-compose.yml    # Docker configuration
-```
+\`\`\`
 
 ## 🔧 API Endpoints
 
@@ -172,10 +172,10 @@ The application is fully responsive and optimized for:
 4. Commit and push changes
 
 ### Database Operations
-```bash
+\`\`\`bash
 make seed              # Add sample data
 make seed-check        # Test database connection
-```
+\`\`\`
 
 ## 🚀 Deployment
 
@@ -212,7 +212,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Happy Reading! 📚✨**
-```
+\`\`\`
 
 Key improvements made:
 1. Consistent code block formatting (triple backticks with language specification)
