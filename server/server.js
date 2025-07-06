@@ -70,3 +70,6 @@ process.on("unhandledRejection", (err, promise) => {
     process.exit(1)
   })
 })
+
+
+export default app

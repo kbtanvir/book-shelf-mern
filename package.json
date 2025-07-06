@@ -3,10 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "dev": "concurrently \"cd server && pnpm dev\" \"next dev\"",
     "build": "next build",
-    "dev": "next dev",
-    "lint": "next lint",
-    "start": "next start"
+    "start": "concurrently \"cd server && node server.js\" \"next build && next start\""
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -70,6 +69,7 @@
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "concurrently": "^9.2.0",
     "postcss": "^8.5",
     "tailwindcss": "^3.4.17",
     "typescript": "^5"
