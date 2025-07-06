@@ -3,9 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"cd server && pnpm dev\" \"next dev\"",
+    "dev": "next dev",
+    "dev:full": "concurrently \"cd server && pnpm dev\" \"next dev\"",
     "build": "next build",
-    "start": "concurrently \"cd server && node server.js\" \"next build && next start\""
+    "start": "next build && next start",
+    "start:full": "concurrently \"cd server && node server.js\" \"next build && next start\""
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
