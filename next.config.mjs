@@ -17,6 +17,7 @@ const nextConfig = {
       },
     ]
   },
+    allowedDevOrigins: [process.env.ALLWED_IP],
 }
 
 export default nextConfig
